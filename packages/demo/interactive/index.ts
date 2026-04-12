@@ -1,3 +1,4 @@
+import { parseEntry } from "@snk/action/outputsOptions";
 import { basePalettes } from "@snk/action/palettes";
 import { userContributionToGrid } from "@snk/action/userContributionToGrid";
 import {
@@ -196,35 +197,63 @@ const createViewer = ({
   document.body.append(input);
 
   //
-  const schemaSelect = document.createElement("select");
-  schemaSelect.style.margin = "10px";
-  schemaSelect.style.alignSelf = "flex-start";
-  schemaSelect.value = "github-light";
-  schemaSelect.addEventListener("change", () => {
-    Object.assign(
-      drawOptions,
-      basePalettes[schemaSelect.value as keyof typeof basePalettes],
-    );
+  const applyDrawOptions = (options: Partial<DrawOptions>) => {
+    Object.assign(drawOptions, options);
 
     svgString = createSvg(grid0, cells, chain, drawOptions, {
       stepDurationMs: 100,
     });
-    const svgImageUri = `data:image/*;charset=utf-8;base64,${btoa(svgString)}`;
-    svgLink.href = svgImageUri;
+    svgLink.href = `data:image/*;charset=utf-8;base64,${btoa(svgString)}`;
 
-    if (schemaSelect.value.includes("dark"))
+    if (
+      Object.entries(basePalettes)
+        .find(([_, o]) => o.colorEmpty === drawOptions.colorEmpty)?.[0]
+        .includes("-dark")
+    )
       document.body.parentElement?.classList.add("dark-mode");
     else document.body.parentElement?.classList.remove("dark-mode");
 
     loop();
-  });
-  for (const name of Object.keys(basePalettes)) {
+  };
+
+  const paletteSelect = document.createElement("select");
+  paletteSelect.style.margin = "10px";
+  paletteSelect.style.alignSelf = "flex-start";
+  paletteSelect.value = "github-light";
+  for (const name of [...Object.keys(basePalettes), "custom"]) {
     const option = document.createElement("option");
     option.value = name;
     option.innerText = name;
-    schemaSelect.appendChild(option);
+    paletteSelect.appendChild(option);
   }
-  document.body.append(schemaSelect);
+
+  const customInput = document.createElement("input");
+  customInput.value =
+    "color_snake=orange&color_dots=#bfd6f6,#8dbdff,#64a1f4,#4b91f1,#3c7dd9";
+  customInput.style.margin = "10px";
+  customInput.style.padding = "10px";
+  customInput.style.width = "min( 800px , 100% - 32px )";
+  customInput.style.alignSelf = "flex-start";
+  customInput.style.display = "none";
+  customInput.addEventListener("input", () => {
+    const v = customInput.value.trim();
+    const entry = v.startsWith("{") ? `x.svg ${v}` : `x.svg?${v}`;
+    const result = parseEntry(entry);
+    if (result) applyDrawOptions(result.drawOptions);
+  });
+
+  paletteSelect.addEventListener("change", () => {
+    const isCustom = paletteSelect.value === "custom";
+    customInput.style.display = isCustom ? "" : "none";
+    if (isCustom) customInput.dispatchEvent(new Event("input"));
+    else
+      applyDrawOptions(
+        basePalettes[paletteSelect.value as keyof typeof basePalettes],
+      );
+  });
+
+  document.body.append(paletteSelect);
+  document.body.append(customInput);
 
   //
   // dark mode
