@@ -85,12 +85,36 @@ For **dark mode** support on github, use this [special syntax](https://docs.gith
 
 [platane.github.io/snk](https://platane.github.io/snk)
 
-### **local**
+### **npm package**
+
+```ts
+import { generate } from "generate-snake-animation";
+
+const outputs = [
+  {
+    format: "svg",
+    drawOptions: {
+      // ..
+    },
+  },
+];
+
+const results = await generateSnakeAnimation(
+  {
+    platform: "github", // supports github, gitlab and forgejo (codeberg)
+    username: "platane",
+    githubToken: process.env.GITHUB_TOKEN,
+  },
+  outputs,
+);
+
+fs.writeFileSync("snake.svg", results[0]);
+```
+
+or with npx
 
 ```sh
-npm install
-
-npm run dev:demo
+npx generate-snake-animation@3 --forgejo_user codeberg.org/JasterV --output snake.svg
 ```
 
 ## Implementation
