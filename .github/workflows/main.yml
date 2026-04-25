@@ -33,23 +33,21 @@ jobs:
 
       - run: bun build:lib
 
-      - name: run output=svg without dependencies
+      - run: mv ./packages/generate-snake-animation/dist ${{ runner.temp }}/snk
+
+      - name: run via npx
         run: |
-          # run in an isolated dir
-          cp -r ./packages/generate-snake-animation/dist ${{ runner.temp }}/snk1
-          ${{ runner.temp }}/snk1/cli.js --github_user=platane --output=snake.svg
+          npx --yes file:${{ runner.temp }}/snk --github_user=platane --output=snake.svg
+          test -f snake.svg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - run: test -f snake.svg
 
-      - name: run output=gif with installed dependencies canvas, gifslice..
-        run: |
-          # run in an isolated dir
-          cp -r ./packages/generate-snake-animation/dist ${{ runner.temp }}/snk2
-          # install the dependencies in the parent dir, so node resolution see them
-          bun add --cwd ${{ runner.temp }} canvas@3.2.0 gif-encoder-2@1.0.5 gifsicle@5.3.0
-          bun ${{ runner.temp }}/snk2/cli.js --github_user=platane --output=snake.gif
+      - name: install dependencies canvas, gifslice.. in the isolated env parent dir
+        run: bun add --cwd ${{ runner.temp }} canvas@3.2.0 gif-encoder-2@1.0.5 gifsicle@5.3.0
+
+      - run: bun ${{ runner.temp }}/snk/cli.js --github_user=platane --output=snake.gif
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
