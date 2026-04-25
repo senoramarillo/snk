@@ -4,14 +4,14 @@ import {
   getCanvasWorldSize,
 } from "@snk/draw/drawWorld";
 import type { Res } from "@snk/github-user-contribution";
-import { cellsToGrid } from "generate-snake-animation/cellsToGrid";
-import { parseEntry } from "generate-snake-animation/outputsOptions";
-import { basePalettes } from "generate-snake-animation/palettes";
 import { step } from "@snk/solver/step";
 import { createSvg } from "@snk/svg-creator";
 import { Color, copyGrid, Grid } from "@snk/types/grid";
 import type { Point } from "@snk/types/point";
 import type { Snake } from "@snk/types/snake";
+import { cellsToGrid } from "generate-snake-animation/cellsToGrid";
+import { parseEntry } from "generate-snake-animation/outputsOptions";
+import { basePalettes } from "generate-snake-animation/palettes";
 import { isStableAndBound, stepSpring } from "./springUtils";
 import type { API as WorkerAPI } from "./worker";
 import { createRpcClient } from "./worker-utils";
@@ -169,11 +169,13 @@ const createViewer = ({
     const k = spring.x % 1;
 
     ctx.clearRect(0, 0, 9999, 9999);
-    drawLerpWorld(ctx, grid, cells, snake0, snake1, stack, k, drawOptions);
+    drawLerpWorld(ctx, grid, cells, snake0, snake1, stack, k, {
+      ...drawOptions,
+      colorBackground: undefined,
+    });
 
     if (!stable) animationFrame = requestAnimationFrame(loop);
   };
-  loop();
 
   //
   // controls
@@ -200,18 +202,36 @@ const createViewer = ({
   const applyDrawOptions = (options: Partial<DrawOptions>) => {
     Object.assign(drawOptions, options);
 
-    svgString = createSvg(grid0, cells, chain, drawOptions, {
+    const svgContent = createSvg(grid0, cells, chain, drawOptions, {
       stepDurationMs: 100,
     });
-    svgLink.href = `data:image/*;charset=utf-8;base64,${btoa(svgString)}`;
+    svgLink.href = `data:image/*;charset=utf-8;base64,${btoa(svgContent)}`;
+    svgLink.setAttribute("data-svg-content", svgContent);
+    svgLink.setAttribute(
+      "background-color",
+      drawOptions.colorBackground ?? "auto",
+    );
 
     if (
       Object.entries(basePalettes)
-        .find(([_, o]) => o.colorEmpty === drawOptions.colorEmpty)?.[0]
+        .find(
+          ([_, o]) =>
+            o.colorEmpty === drawOptions.colorEmpty &&
+            o.colorBackground === drawOptions.colorBackground,
+        )?.[0]
         .includes("-dark")
-    )
+    ) {
       document.body.parentElement?.classList.add("dark-mode");
-    else document.body.parentElement?.classList.remove("dark-mode");
+    } else document.body.parentElement?.classList.remove("dark-mode");
+
+    if (drawOptions.colorBackground)
+      document.body.parentElement?.style.setProperty(
+        "--background-color",
+        drawOptions.colorBackground,
+      );
+    else {
+      document.body.parentElement?.style.removeProperty("--background-color");
+    }
 
     loop();
   };
@@ -259,31 +279,27 @@ const createViewer = ({
   // dark mode
   const style = document.createElement("style");
   style.innerText = `
-  html { transition:background-color 180ms }
+  html {
+    transition:background-color 180ms;
+    background-color:var(--background-color);
+  }
   a { transition:color 180ms }
-  html.dark-mode{ background-color:#0d1117 }
-  html.dark-mode a{ color:rgb(201, 209, 217) }
+  html.dark-mode a{ color:white }
+  html.dark-mode { --background-color:#0d1117; }
   `;
   document.head.append(style);
 
   //
   // svg
   const svgLink = document.createElement("a");
-  let svgString = createSvg(grid0, cells, chain, drawOptions, {
-    stepDurationMs: 100,
-  });
-  const svgImageUri = `data:image/*;charset=utf-8;base64,${btoa(svgString)}`;
-  svgLink.href = svgImageUri;
   svgLink.innerText = "github-user-contribution.svg";
   svgLink.download = "github-user-contribution.svg";
   svgLink.addEventListener("click", (e) => {
     const w = window.open("")!;
     w.document.write(
-      (document.body.parentElement?.classList.contains("dark-mode")
-        ? "<style>html{ background-color:#0d1117 }</style>"
-        : "") +
+      `<style>html{ background-color: ${svgLink.getAttribute("background-color") ?? "auto"} }</style>` +
         `<a href="${svgLink.href}" download="github-user-contribution.svg">` +
-        svgString +
+        svgLink.getAttribute("data-svg-content") +
         "<a/>",
     );
     e.preventDefault();
@@ -292,6 +308,8 @@ const createViewer = ({
   svgLink.style.paddingTop = "60px";
   svgLink.style.alignSelf = "flex-start";
   document.body.append(svgLink);
+
+  applyDrawOptions(drawOptions);
 
   //
   // dispose
