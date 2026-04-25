@@ -88,7 +88,7 @@ For **dark mode** support on github, use this [special syntax](https://docs.gith
 ### **npm package**
 
 ```ts
-import { generate } from "generate-snake-animation";
+import { generateSnakeAnimation } from "generate-snake-animation";
 
 const outputs = [
   {
@@ -114,7 +114,7 @@ fs.writeFileSync("snake.svg", results[0]);
 or with npx
 
 ```sh
-npx generate-snake-animation@3 --forgejo_user codeberg.org/JasterV --output snake.svg
+npx generate-snake-animation@3 --forgejo_user codeberg.org/JasterV --output snake.svg?palette=codeberg
 ```
 
 ## Implementation
