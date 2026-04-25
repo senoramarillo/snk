@@ -14,6 +14,7 @@ cat > dist/package.json << EOF
 {
   "name": "generate-snake-animation",
   "version": "$(node -p "require('../../package.json').version")",
+  "repository": "$(node -p "require('../../package.json').repository")",
   "bin": { "generate-snake-animation": "cli.js" },
   "type": "module",
   "main": "./generateSnakeAnimation.js",
