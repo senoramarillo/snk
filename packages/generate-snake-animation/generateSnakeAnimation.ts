@@ -8,6 +8,8 @@ import type { DrawOptions } from "@snk/svg-creator";
 import { snake4 } from "@snk/types/__fixtures__/snake";
 import { cellsToGrid } from "./cellsToGrid";
 
+export { basePalettes, palettes } from "./palettes";
+
 export type Source =
   | {
       platform: "github";
